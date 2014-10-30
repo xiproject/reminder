@@ -3,12 +3,14 @@ var _ = require('underscore');
 var sugar = require('sugar');
 
 var possibleReminders = [];
+var inputManager;
 
 function processInputText(inputText) {
     var match = inputText.match(/\bremind me to\b(.*)/i);
     if (match) {
         var t = match[1].match(/(.*?)(( in)? (\d+ (second|minute|hour|day)s?).*)/i);
         if (t) {
+            //TODO: check out future
             var time = Date.create(t[4] + ' from now');
             return {
                 task: t[1],
@@ -19,14 +21,24 @@ function processInputText(inputText) {
     return null;
 }
 
-function createReminder(task, time) {
-    xal.createEvent('xi.event.calendar', function(state, done) {
-        state.put('xi.event.calendar.start', time);
-        state.put('xi.event.calendar.end', time);
-        state.put('xi.event.calendar.title', 'Reminder');
-        state.put('xi.event.calendar.description', task);
-        done(state);
-    });
+function createReminder(reminder) {
+    // TODO: create calendar event
+    // xal.createEvent('xi.event.calendar', function(state, done) {
+    //     state.put('xi.event.calendar.start', reminder.time.toString());
+    //     state.put('xi.event.calendar.end', reminder.time.toString());
+    //     state.put('xi.event.calendar.title', 'Reminder');
+    //     state.put('xi.event.calendar.description', reminder.task);
+    //     done(state);
+    // });
+
+    setTimeout(function() {
+        xal.log.info('trying to send reminder to output');
+        xal.createEvent('xi.event.output.text', function(state, done) {
+            xal.log.info({state: state}, 'created event');
+            state.put('xi.event.output.text', 'You have to ' + reminder.task + ' now.');
+            done(state);
+        });
+    }, reminder.time.getTime() - (new Date().getTime()));
 }
 
 function getReminder(eventId) {
@@ -40,7 +52,6 @@ function getReminder(eventId) {
 
 xal.on('xi.event.input.text', function(state, next) {
     var texts = state.get('xi.event.input.text');
-    xal.log.info({texts: texts}, 'Got texts');
     var text = _.reduce(texts, function(memo, value) {
         if (memo.certainty > value.certainty) {
             memo = value;
@@ -60,9 +71,14 @@ xal.on('xi.event.input.text', function(state, next) {
 });
 
 xal.on('xi.event.input.destination', function(state, next) {
-    var dest = state.get('xi.event.input.destination');
-    if (dest === xal.getId()) {
-        xal.log.info('This is a scam because I set destination to myself');
+    var dest = _.reduce(state.get('xi.event.input.destination'), function(memo, dest) {
+        if (dest.source === inputManager.id) {
+            memo = dest;
+        }
+        return memo;
+    }, null);
+    if (dest) {
+        xal.log.info({dest: dest}, 'Acting on InputManager\'s command');
         var reminder = getReminder(state.get('xi.event.id'));
         if (reminder) {
             createReminder(reminder.reminder);
@@ -73,4 +89,14 @@ xal.on('xi.event.input.destination', function(state, next) {
     }
 });
 
-xal.start({name: 'Reminder'});
+xal.start({name: 'Reminder'}, function() {
+    xal.getAgent({name: 'InputManager'}, function(err, agent) {
+        if (err) {
+            xal.log.fatal(err);
+        } else if (agent === null) {
+            xal.log.fatal('InputManager is required');
+        } else {
+            inputManager = agent;
+        }
+    });
+});
