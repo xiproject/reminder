@@ -1,24 +1,26 @@
 var xal = require('../../xal-javascript');
 var _ = require('underscore');
 var sugar = require('sugar');
+var wit = require('./wit');
+var config = require('./config.json');
+
 
 var possibleReminders = [];
 var inputManager;
 
-function processInputText(inputText) {
-    var match = inputText.match(/\bremind me to\b(.*)/i);
-    if (match) {
-        var t = match[1].match(/(.*?)(( in)? (\d+ (second|minute|hour|day)s?).*)/i);
-        if (t) {
-            //TODO: check out future
-            var time = Date.create(t[4] + ' from now');
-            return {
-                task: t[1],
-                time: time
-            };
+function processInputText(inputText,cb) {
+    wit.parse(inputText, function(response){
+        if(response.intent === 'reminder' && response.confidence > 0.5){
+            cb({
+                task: response.entities.reminder.value,
+                time: Date.create(response.entities.datetime.value)
+            });
         }
-    }
-    return null;
+        else{
+            cb(null);
+        }
+    });
+
 }
 
 function createReminder(reminder) {
@@ -58,16 +60,20 @@ xal.on('xi.event.input.text', function(state, next) {
         }
         return memo;
     });
-    var reminder = processInputText(text.value);
-    if (reminder) {
-        xal.log.info({reminder: reminder}, 'Parsed a reminder out of input text');
-        possibleReminders.push({
-            eventId: state.get('xi.event.id'),
-            reminder: reminder
-        });
-        state.put('xi.event.input.destination', xal.getId());
-    }
-    next(state);
+    var reminder = processInputText(text.value, function(reminder){
+        
+        if (reminder) {
+            xal.log.info({reminder: reminder}, 'Parsed a reminder out of input text');
+            possibleReminders.push({
+                eventId: state.get('xi.event.id'),
+                reminder: reminder
+            });
+            state.put('xi.event.input.destination', xal.getId());
+        }
+        next(state);
+
+        
+    });
 });
 
 xal.on('xi.event.input.destination', function(state, next) {

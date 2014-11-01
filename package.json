@@ -4,8 +4,10 @@
   "description": "",
   "main": "index.js",
   "dependencies": {
+    "request": "^2.47.0",
     "sugar": "^1.4.1",
-    "underscore": "^1.7.0"
+    "underscore": "^1.7.0",
+    "wit-node": "0.0.5"
   },
   "devDependencies": {},
   "scripts": {
