@@ -60,8 +60,8 @@ xal.on('xi.event.input.text', function(state, next) {
         }
         return memo;
     });
-    var reminder = processInputText(text.value, function(reminder){
-        
+    processInputText(text.value, function(reminder){
+
         if (reminder) {
             xal.log.info({reminder: reminder}, 'Parsed a reminder out of input text');
             possibleReminders.push({
@@ -72,7 +72,7 @@ xal.on('xi.event.input.text', function(state, next) {
         }
         next(state);
 
-        
+
     });
 });
 
@@ -83,7 +83,7 @@ xal.on('xi.event.input.destination', function(state, next) {
         }
         return memo;
     }, null);
-    if (dest) {
+    if (dest && dest.value == xal.getId()) {
         xal.log.info({dest: dest}, 'Acting on InputManager\'s command');
         var reminder = getReminder(state.get('xi.event.id'));
         if (reminder) {
@@ -93,6 +93,7 @@ xal.on('xi.event.input.destination', function(state, next) {
             xal.log.info('Could not retrieve any reminder for this event');
         }
     }
+    next(state);
 });
 
 xal.start({name: 'Reminder'}, function() {
