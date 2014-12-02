@@ -3,7 +3,7 @@ var config;
 var token;
 var fs = require('fs');
 
-if (fs.existSync('./config.json')) {
+if (fs.existsSync('./config.json')) {
     config = require('./config.json');
     token = config.wit;
     if (config.proxy) {
