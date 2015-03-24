@@ -9,31 +9,21 @@ var possibleReminders = [];
 var inputManager;
 
 function processInputText(inputText, cb) {
-    wit.parse(inputText, function(response) {
-        if (response.intent === 'reminder' && response.confidence > 0.5) {
+    //Fallback to regular expressions
+    var match = inputText.match(/.*\bremind me to\b(.*)/i);
+    if (match) {
+        var t = match[1].match(/(.*?)(( in)? (\d+ (second|minute|hour|day)s?).*)/i);
+        if (t) {
+            var time = Date.create(t[4] + ' from now');
             cb({
-                task: response.entities.reminder.value,
-                time: Date.create(response.entities.datetime.value)
+                task: t[1],
+                time: time
             });
-        } 
-        else{
-            //Fallback to regular expressions
-            var match = inputText.match(/\bremind me to\b(.*)/i);
-            if (match) {
-                var t = match[1].match(/(.*?)(( in)? (\d+ (second|minute|hour|day)s?).*)/i);
-                if (t) {
-                    var time = Date.create(t[4] + ' from now');
-                    cb({
-                        task: t[1],
-                        time: time
-                    });
-                }
-            }
-            else{
-                cb(null);
-            }
         }
-    });
+    }
+    else{
+        cb(null);
+    }
 }
 
 function createReminder(reminder) {
