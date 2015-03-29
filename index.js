@@ -1,11 +1,6 @@
 var xal = require('../../xal-javascript');
 var _ = require('underscore');
 var sugar = require('sugar');
-var wit = require('./wit');
-var config = require('./config.json');
-
-
-var possibleReminders = [];
 
 function processInputText(inputText, cb) {
     //Fallback to regular expressions
@@ -53,9 +48,9 @@ xal.on('xi.event.input.text', function(state, next) {
                 reminder: reminder
             }, 'Parsed a reminder out of input text');
             createReminder(reminder);
-            state.put('xi.event.output.text', "Okay, I will remind you to " + reminder.reminder.task);
+            state.put('xi.event.output.text', "Okay, I will remind you to " + reminder.task);
+            next(state);
         }
-        next(state);
     });
 });
 
